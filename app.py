@@ -1,9 +1,15 @@
-import os
+############################################################
+#                    IMPORTAR LIBRERIAS                   #
+############################################################
+
 import streamlit as st
 from groq import Groq
 from dotenv import load_dotenv
+import os
 
-st.set_page_config(page_title="Chatbot con IA", page_icon="💬", layout="centered")
+############################################################
+#              CONFIGURAR VARIABLES DE ENTORNO             #
+############################################################
 
 # Cargar la API key de forma segura
 try:
@@ -15,26 +21,64 @@ except:
 os.environ["GROQ_API_KEY"] = API_KEY
 client = Groq()  # Cliente para invocar la API de Groq
 
-# Inicializar el historial de chat en la sesión
+############################################################
+#                      CONFIGURAR APP                     #
+############################################################
+
+# ****************** Configurar pagina ******************
+
+# Configurar pagina
+st.set_page_config(page_title="Chatbot con IA", page_icon="🤖", layout="centered")
+st.title("🏥 Chatbot IA - Médico especializado en Oncología (Demo)")
+st.write("Puedes hacer preguntas y el chatbot responderá usando un modelo de lenguaje.")
+
+# Sidebar
+# Modelos Groq: https://console.groq.com/docs/models
+with st.sidebar:
+    st.header("Configuración")
+    tipo_cancer = st.selectbox("Área de interés", [
+        "General",
+        "Cáncer de mama",
+        "Cáncer de pulmón",
+        "Cáncer de colon",
+        "Leucemia / Linfoma",
+        "Otro",
+    ])
+    idioma = st.selectbox("Idioma", [
+        "Español",
+        "English",
+        "Português"
+    ])
+    
+    # ****************** Crear el system prompt con comportamiento específico ******************
+
+    SYSTEM_PROMPT = f"""
+    Eres un asistente médico especializado exclusivamente en oncología.
+    Preséntate siempre como médico oncólogo al inicio de cada conversación, no es necesario que digas tu nombre, tu representas el area de oncología en general, no un hospital o clínica específica.
+    Responde únicamente preguntas relacionadas con oncología (tipos de cáncer, diagnóstico, tratamientos, prevención, efectos secundarios, etc.).
+    Si el usuario pregunta sobre cualquier otro tema fuera de tu especialidad, declina amablemente e indica que solo puedes asistir en temas oncológicos.
+    Recuerda al usuario que tus respuestas son informativas y no reemplazan una consulta médica presencial.
+
+    Área de interés oncológico: {tipo_cancer}. Si no es 'General', prioriza información relacionada con ese tipo de cáncer.
+
+    Responde siempre en {idioma}, sin excepción, independientemente del idioma en que escriba el usuario o el historial de mensajes que tengas.
+    """
+    print("SYSTEM_PROMPT", SYSTEM_PROMPT)
+
+# ****************** Inicializar la variable "chat_history" que tendra el historial de mensajes en "session_state" ******************
+
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []  # lista de dicts: {"role": ..., "content": ...}
 
-SYSTEM_PROMPT = """
-Eres un asistente médico especializado exclusivamente en oncología.
-Preséntate siempre como médico oncólogo al inicio de cada conversación, no es necesario que digas tu nombre, tu representas el area de oncología en general, no un hospital o clínica específica.
-Responde únicamente preguntas relacionadas con oncología (tipos de cáncer, diagnóstico, tratamientos, prevención, efectos secundarios, etc.).
-Si el usuario pregunta sobre cualquier otro tema fuera de tu especialidad, declina amablemente e indica que solo puedes asistir en temas oncológicos.
-Recuerda al usuario que tus respuestas son informativas y no reemplazan una consulta médica presencial.
-"""
+# ****************** Renderizar historial de mensajes ******************
 
-st.title("🤖 Chatbot IA - Médico especializado en Oncología (Demo)")
-st.write("Puedes hacer preguntas y el chatbot responderá usando un modelo de lenguaje.")
-
-# Render del historial
 for msg in st.session_state.chat_history:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
+# ****************** Input de usuario ******************
+
+# chat_input: Es el widget de entrada de chat, esta pensado para ir fijo en la parte inferior de la pantalla como en WhatsApp o Telegram
 user_input = st.chat_input("Escribe tu pregunta aquí...")
 
 if user_input:
@@ -48,11 +92,12 @@ if user_input:
     if SYSTEM_PROMPT:
         messages.append({"role": "system", "content": SYSTEM_PROMPT})
         messages.extend(st.session_state.chat_history)
+        print("messages", messages)
 
         # Llamar a la API **solo** si hay user_input (evita NameError)
         try:
             response = client.chat.completions.create(
-                model="llama-3.1-8b-instant",
+                model="llama-3.3-70b-versatile",  # llama-3.3-70b-versatile | llama-3.1-8b-instant | openai/gpt-oss-120b | openai/gpt-oss-20b
                 messages=messages,
                 temperature=0.7,
             )
@@ -66,3 +111,9 @@ if user_input:
 
         # Guardar en historial
         st.session_state.chat_history.append({"role": "assistant", "content": respuesta_texto})
+
+# ****************** Nueva conversación ******************
+
+if st.button("🗑️ Nueva conversación"):
+    st.session_state.chat_history = []  # Limpiar historial de mensajes
+    st.rerun()  # Recargar pagina
