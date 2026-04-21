@@ -1,3 +1,23 @@
+"""
+App Importante (UI): Chatbot IA - Médico Oncológico con Streamlit y Groq
+
+Qué hace:
+    Chatbot IA con historial de conversación usando Streamlit y Groq. Permite elegir desde el sidebar el área de interés oncológico
+    (General, cáncer de mama, pulmón, colon, leucemia / linfoma u otro) y el idioma de respuesta (Español, English, Português).
+    Construye un mensaje de sistema dinámico para restringir al asistente exclusivamente a temas de oncología,
+    recordar que la información es solo orientativa y forzar el idioma seleccionado. Usa session_state para conservar
+    el historial del chat, renderiza los mensajes previos, responde mediante la API de Groq y ofrece botón para iniciar
+    una nueva conversación.
+
+Tecnologías:
+    Streamlit (set_page_config, title, write, sidebar, selectbox, chat_input, chat_message, button, session_state, rerun),
+    Groq (cliente y chat completions), python-dotenv y os (carga de GROQ_API_KEY desde .env o secrets de Streamlit).
+
+Ejecutar:
+    cd 5 Python/2 master-python-datascience/chatbot_streamlit_grupo1_diplomadoia
+    streamlit run app.py
+"""
+
 ############################################################
 #                    IMPORTAR LIBRERIAS                   #
 ############################################################
